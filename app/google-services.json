@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1097215840612",
+    "project_id": "thelongevityapp-b9b7c",
+    "storage_bucket": "thelongevityapp-b9b7c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1097215840612:android:4e740cc133ebe228406a71",
+        "android_client_info": {
+          "package_name": "com.thelongevityapp.android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJWQFMJU3H3YrEz7OHJxUm1JMNHRm9S_I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
