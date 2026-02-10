@@ -69,13 +69,13 @@ class ApiRepository(private val session: SessionRepository) {
     suspend fun postOnboardingSubmit(request: OnboardingSubmitRequest): OnboardingResultDTO = withContext(Dispatchers.IO) {
         try {
             RetrofitModule.api.postOnboardingSubmit(
-                "Bearer ${com.thelongevityapp.android.auth.AuthManager.getIdToken()}",
+                "Bearer ${AuthManager.getIdToken()}",
                 language(),
                 request
             )
         } catch (e: HttpException) {
             val resp = e.response()
-            throw ApiException.HttpError(resp?.code() ?: -1, "")
+            throw ApiException.HttpError(resp?.code() ?: -1, resp?.errorBody()?.string() ?: "")
         }
     }
 
@@ -127,18 +127,18 @@ class ApiRepository(private val session: SessionRepository) {
 
     suspend fun requestPasswordReset(email: String) = withContext(Dispatchers.IO) {
         val r: Response<Unit> = RetrofitModule.api.requestPasswordReset(language(), PasswordResetRequestRequest(email))
-        if (!r.isSuccessful) throw ApiException.HttpError(r.code(), "")
+        if (!r.isSuccessful) throw ApiException.HttpError(r.code(), r.errorBody()?.string() ?: "")
     }
 
     suspend fun verifyPasswordReset(email: String, code: String): String = withContext(Dispatchers.IO) {
         val r: Response<com.thelongevityapp.android.api.PasswordResetVerifyResponse> = RetrofitModule.api.verifyPasswordReset(language(), PasswordResetVerifyRequest(email, code))
-        if (!r.isSuccessful) throw ApiException.HttpError(r.code(), "")
-        r.body()!!.resetToken
+        if (!r.isSuccessful) throw ApiException.HttpError(r.code(), r.errorBody()?.string() ?: "")
+        r.body()?.resetToken ?: throw ApiException.HttpError(r.code(), "Invalid response")
     }
 
     suspend fun confirmPasswordReset(resetToken: String, newPassword: String) = withContext(Dispatchers.IO) {
         val r: Response<Unit> = RetrofitModule.api.confirmPasswordReset(language(), PasswordResetConfirmRequest(resetToken, newPassword))
-        if (!r.isSuccessful) throw ApiException.HttpError(r.code(), "")
+        if (!r.isSuccessful) throw ApiException.HttpError(r.code(), r.errorBody()?.string() ?: "")
     }
 
     suspend fun getBiologicalAgeChart(range: String): BiologicalAgeChartResponse = withContext(Dispatchers.IO) {

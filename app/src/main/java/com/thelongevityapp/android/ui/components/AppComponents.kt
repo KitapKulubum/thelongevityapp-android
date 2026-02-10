@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,9 +17,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -25,20 +29,31 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.thelongevityapp.android.ui.theme.GlassBorder
-import com.thelongevityapp.android.ui.theme.GlassFill
+import com.thelongevityapp.android.ui.theme.InputSurfaceDark
+import com.thelongevityapp.android.ui.theme.InputSurfaceDarkBottom
 import com.thelongevityapp.android.ui.theme.PrimaryGreen
 import com.thelongevityapp.android.ui.theme.TextMuted
+import java.util.Calendar
+
+private val AuthInputShape = RoundedCornerShape(30.dp)
+private val AuthPillShape = RoundedCornerShape(28.dp)
 
 @Composable
 fun GlassTextField(
@@ -47,31 +62,125 @@ fun GlassTextField(
     label: String,
     placeholder: String,
     modifier: Modifier = Modifier,
-    isPassword: Boolean = false
+    isPassword: Boolean = false,
+    helper: String? = null,
+    supportingText: String? = null,
+    supportingTextColor: Color = PrimaryGreen.copy(alpha = 0.75f)
 ) {
-    val shape = RoundedCornerShape(28.dp)
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp) },
-        placeholder = { Text(placeholder, color = TextMuted.copy(alpha = 0.7f)) },
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(GlassFill)
-            .border(1.dp, GlassBorder, shape),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Color.Transparent,
-            unfocusedBorderColor = Color.Transparent,
-            focusedLabelColor = PrimaryGreen,
-            unfocusedLabelColor = TextMuted,
-            cursorColor = PrimaryGreen,
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White
-        ),
-        singleLine = true,
-        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None
-    )
+    Column(modifier = modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp) },
+            placeholder = { Text(placeholder, color = TextMuted.copy(alpha = 0.7f)) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(AuthInputShape)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(InputSurfaceDark, InputSurfaceDarkBottom)
+                    )
+                ),
+            shape = AuthInputShape,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
+                disabledBorderColor = Color.Transparent,
+                focusedLabelColor = PrimaryGreen,
+                unfocusedLabelColor = TextMuted,
+                cursorColor = PrimaryGreen,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent
+            ),
+            singleLine = true,
+            visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None
+        )
+        if (helper != null) {
+            Text(
+                helper,
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 11.sp,
+                modifier = Modifier.padding(start = 4.dp, top = 2.dp)
+            )
+        }
+        if (supportingText != null) {
+            Text(
+                supportingText,
+                color = supportingTextColor,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(start = 4.dp, top = 2.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun GlassDatePicker(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    placeholder: String,
+    helper: String? = null,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    Column(modifier = modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(AuthPillShape)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(InputSurfaceDark, InputSurfaceDarkBottom)
+                    )
+                )
+                .border(1.dp, Color.White.copy(alpha = 0.08f), AuthPillShape)
+                .clickable {
+                    val cal = Calendar.getInstance()
+                    try {
+                        value.takeIf { it.length >= 10 }?.let { s ->
+                            val parts = s.split("-")
+                            if (parts.size == 3) {
+                                cal.set(parts[0].toIntOrNull() ?: cal.get(Calendar.YEAR),
+                                    (parts[1].toIntOrNull() ?: 1) - 1,
+                                    parts[2].toIntOrNull() ?: 1)
+                            }
+                        }
+                    } catch (_: Exception) { }
+                    android.app.DatePickerDialog(
+                        context,
+                        { _, y, m, d ->
+                            onValueChange("%04d-%02d-%02d".format(y, m + 1, d))
+                        },
+                        cal.get(Calendar.YEAR),
+                        cal.get(Calendar.MONTH),
+                        cal.get(Calendar.DAY_OF_MONTH)
+                    ).show()
+                }
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            Column {
+                Text(label, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                Text(
+                    text = value.ifBlank { placeholder },
+                    color = if (value.isBlank()) TextMuted.copy(alpha = 0.7f) else Color.White,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+        if (helper != null) {
+            Text(
+                helper,
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 11.sp,
+                modifier = Modifier.padding(start = 4.dp, top = 2.dp)
+            )
+        }
+    }
 }
 
 @Composable
@@ -79,24 +188,64 @@ fun PrimaryPillButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    loading: Boolean = false,
+    showTrailingIcon: Boolean = true
 ) {
+    val gradientColors = if (enabled && !loading) {
+        listOf(
+            com.thelongevityapp.android.ui.theme.PrimaryGreenDark,
+            PrimaryGreen
+        )
+    } else {
+        listOf(
+            PrimaryGreen.copy(alpha = 0.45f),
+            PrimaryGreen.copy(alpha = 0.45f)
+        )
+    }
     Button(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 16.dp),
-        enabled = enabled,
-        shape = RoundedCornerShape(percent = 50),
+            .height(56.dp)
+            .clip(AuthInputShape)
+            .background(
+                brush = Brush.verticalGradient(gradientColors),
+                shape = AuthInputShape
+            ),
+        enabled = enabled && !loading,
+        shape = AuthInputShape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = PrimaryGreen,
+            containerColor = Color.Transparent,
             contentColor = Color.Black,
-            disabledContainerColor = PrimaryGreen.copy(alpha = 0.6f),
+            disabledContainerColor = Color.Transparent,
             disabledContentColor = Color.Black.copy(alpha = 0.6f)
         ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 12.dp)
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+        contentPadding = PaddingValues(vertical = 16.dp, horizontal = 24.dp)
     ) {
-        Text(text, fontSize = 16.sp, color = Color.Black)
+        Text(
+            text,
+            fontSize = 16.sp,
+            color = if (enabled && !loading) Color.Black else Color.Black.copy(alpha = 0.6f)
+        )
+        if (showTrailingIcon) {
+            Spacer(modifier = Modifier.weight(1f))
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = Color.Black,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Icon(
+                    Icons.Default.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = Color.Black
+                )
+            }
+        }
     }
 }
 
@@ -130,7 +279,7 @@ fun OptionButton(
     }
 }
 
-// §4.8 OnboardingProgressBar — track 6dp, fill primary green, "Question X / Y"
+// §4.8 OnboardingProgressBar — track 6dp corner 4dp, fill primary green, "Question X / Y" + "Z%"
 @Composable
 fun OnboardingProgressBar(
     progress: Float,
@@ -138,19 +287,46 @@ fun OnboardingProgressBar(
     totalQuestions: Int,
     modifier: Modifier = Modifier
 ) {
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress.coerceIn(0f, 1f),
+        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        label = "progress"
+    )
     Column(modifier = modifier.fillMaxWidth()) {
-        androidx.compose.material3.LinearProgressIndicator(
-            progress = progress,
-            modifier = Modifier.fillMaxWidth().height(6.dp).padding(horizontal = 4.dp),
-            color = PrimaryGreen,
-            trackColor = Color.White.copy(alpha = 0.1f)
-        )
-        Text(
-            "Question $currentQuestion / $totalQuestions • ${(progress * 100).toInt()}%",
-            color = Color.White.copy(alpha = 0.6f),
-            fontSize = 12.sp,
-            modifier = Modifier.padding(top = 6.dp)
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(Color.White.copy(alpha = 0.1f))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(animatedProgress)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(PrimaryGreen)
+            )
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                "Question $currentQuestion / $totalQuestions",
+                color = Color.White.copy(alpha = 0.6f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                "${(progress * 100).toInt()}%",
+                color = Color.White.copy(alpha = 0.6f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
 

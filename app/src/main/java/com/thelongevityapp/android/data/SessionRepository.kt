@@ -17,6 +17,7 @@ class SessionRepository(private val context: Context) {
 
     private val prefs = context.getSharedPreferences("session", Context.MODE_PRIVATE)
     private val languageKey get() = "language"
+    private val dateOfBirthKey = "userDateOfBirth"
     private val onboardingKey get() = "hasCompletedOnboarding_${appState.userId}"
     private val summaryKey get() = "cachedSummary_${appState.userId}"
     private fun whyThisAppKey() = "hasSeenWhyThisAppScreen_${appState.userId}"
@@ -78,6 +79,14 @@ class SessionRepository(private val context: Context) {
         appState.hasCompletedOnboarding = completed
         prefs.edit().putBoolean(onboardingKey, completed).apply()
     }
+
+    /** Persist DoB from signup (yyyy-MM-dd) for optional chronological age fallback. */
+    fun persistDateOfBirth(dateOfBirth: String?) {
+        if (dateOfBirth.isNullOrBlank()) return
+        prefs.edit().putString(dateOfBirthKey, dateOfBirth.trim()).apply()
+    }
+
+    fun getStoredDateOfBirth(): String? = prefs.getString(dateOfBirthKey, null)?.takeIf { it.isNotBlank() }
 
     fun persistSummary(summary: StatsSummaryResponse) {
         appState.summary = summary

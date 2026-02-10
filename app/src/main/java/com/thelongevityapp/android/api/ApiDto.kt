@@ -7,7 +7,7 @@ data class AuthMeRequest(
     val idToken: String,
     val firstName: String? = null,
     val lastName: String? = null,
-    val dateOfBirth: String? = null,
+    val dateOfBirth: String? = null, // yyyy-MM-dd; sent on signup, backend returns profile.chronologicalAgeYears
     val acceptedPrivacyPolicyVersion: String? = null,
     val acceptedTermsVersion: String? = null
 )

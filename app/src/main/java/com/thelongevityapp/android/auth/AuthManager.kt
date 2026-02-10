@@ -22,6 +22,10 @@ object AuthManager {
         firebaseAuth.signInWithEmailAndPassword(email, password).await()
     }
 
+    suspend fun sendPasswordResetEmail(email: String) {
+        firebaseAuth.sendPasswordResetEmail(email).await()
+    }
+
     fun signOut() {
         firebaseAuth.signOut()
     }

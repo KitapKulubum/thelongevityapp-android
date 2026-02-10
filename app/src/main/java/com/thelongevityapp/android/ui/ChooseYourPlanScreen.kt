@@ -14,11 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,9 +26,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.thelongevityapp.android.auth.AuthManager
+import com.thelongevityapp.android.R
 import com.thelongevityapp.android.data.SessionRepository
 import com.thelongevityapp.android.ui.components.PrimaryPillButton
 import com.thelongevityapp.android.ui.theme.ContentGradientBottom
@@ -48,7 +48,6 @@ fun ChooseYourPlanScreen(
     modifier: Modifier = Modifier
 ) {
     var selectedPlan by remember { mutableStateOf("yearly") }
-    var showLogoutConfirm by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -125,32 +124,16 @@ fun ChooseYourPlanScreen(
                 .clickable { }
                 .padding(12.dp)
         )
+        Spacer(modifier = Modifier.height(16.dp))
         Text(
-            "Log out",
-            color = Color.White.copy(alpha = 0.5f),
-            fontSize = 14.sp,
+            stringResource(R.string.not_you_log_out),
+            color = Color.White.copy(alpha = 0.4f),
+            fontSize = 13.sp,
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { showLogoutConfirm = true }
-                .padding(12.dp)
-        )
-    }
-
-    if (showLogoutConfirm) {
-        AlertDialog(
-            onDismissRequest = { showLogoutConfirm = false },
-            title = { Text("Log out") },
-            text = { Text("Are you sure you want to log out?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showLogoutConfirm = false
-                    AuthManager.signOut()
-                    onSignOut()
-                }) { Text("Log out", color = PrimaryGreen) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLogoutConfirm = false }) { Text("Cancel", color = TextSecondary) }
-            }
+                .clickable { onSignOut() }
+                .padding(12.dp),
+            textAlign = TextAlign.Center
         )
     }
 }

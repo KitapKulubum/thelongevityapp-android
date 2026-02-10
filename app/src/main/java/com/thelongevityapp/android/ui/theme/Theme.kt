@@ -4,10 +4,13 @@ import androidx.compose.ui.graphics.Color
 
 // §2.1–2.3 Spec: AppColors / Stil
 val PrimaryGreen = Color(0xFF1ABC80)                    // #1ABC80 (26, 188, 128)
+val PrimaryGreenDark = Color(0xFF158A5C)               // darker green for gradient (top)
 val PrimaryGreenBiologicalAge = Color(0xFF21B87F)     // RGB(33, 184, 127)
+val InputSurfaceDark = Color(0xFF141E1A)              // soft dark for input background
+val InputSurfaceDarkBottom = Color(0xFF0D1612)        // gradient bottom
 val ChartBackgroundDark = Color(0xFF041B16)            // #041B16
 val DarkBgTop = Color.Black
-val DarkBgBottom = Color(0xFF0D2818)                   // §2.2 Auth: (0.05, 0.16, 0.12)
+val DarkBgBottom = Color(0xFF0D281E)                   // §2.2 Auth: rgb(0.05, 0.16, 0.12)
 val ContentGradientBottom = Color(0xFF0A2014)          // §2.2 ana koyu: (0.04, 0.12, 0.08)
 val TextSecondary = Color(0xFFB3E5CC)                 // white ~0.6–0.7
 val TextMuted = Color(0x99FFFFFF)                      // white 0.6
@@ -21,3 +24,5 @@ val WarningOrange = Color(0xFFE69500)                  // §2.3 reminder / negat
 val ErrorRed = Color(0xFFE53935)
 val ValidationYellow = Color(0xFFFFC204)               // §2.3 RGB(1, 0.76, 0.03)
 val InputPlaceholder = Color(0x9EFFFFFF)               // §4.10 white 0.62
+val MeaningBackground = Color(0xFF050D12)             // RGB(0.02, 0.05, 0.07) — Meaning screens
+val InitialAgeGradientBottom = Color(0xFF0A1A14)       // RGB(0.04, 0.10, 0.08) — Initial Age screen

@@ -90,7 +90,8 @@ fun RootNav() {
                 session.persistOnboarding(true)
                 session.appState.setInitialAges(chronologicalYears, biologicalYears)
                 navTrigger++
-            }
+            },
+            onSignOut = { AuthManager.signOut(); authTrigger++ }
         )
         session.appState.isSubscriptionActive -> MainTabScreen(session = session, apiRepo = apiRepo, onSignOut = { AuthManager.signOut(); authTrigger++ })
         !session.appState.hasSeenInitialAgeInsightScreen -> InitialAgeInsightScreen(
@@ -99,7 +100,8 @@ fun RootNav() {
             onContinue = {
                 session.persistSeenInitialAgeInsight(true)
                 navTrigger++
-            }
+            },
+            onSignOut = { AuthManager.signOut(); authTrigger++ }
         )
         !session.appState.hasSeenChoosePlanScreen -> ChooseYourPlanScreen(
             session = session,

@@ -1,4 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">The Longevity App</string>
+
+    <!-- Auth -->
+    <string name="auth_first_name_helper">This is how we\'ll address you.</string>
+    <string name="auth_dob_helper">Used to calculate your biological age.</string>
+    <string name="auth_email_invalid">Please enter a valid email address.</string>
+    <string name="auth_password_helper">A strong password helps protect your longevity data.</string>
+    <string name="auth_agree_prefix">I agree to the </string>
+    <string name="auth_privacy_policy">Privacy Policy</string>
+    <string name="auth_and"> &amp; </string>
+    <string name="auth_terms_of_service">Terms of Service</string>
+    <string name="auth_already_have_account">Already have an account? </string>
+    <string name="auth_log_in">Log in</string>
+    <string name="auth_dont_have_account">Don\'t have an account? </string>
+    <string name="auth_sign_up">Sign up</string>
+
+    <!-- Meaning onboarding (3 pages) -->
+    <string name="meaning_skip">Skip</string>
+    <string name="meaning_continue">Continue</string>
+    <string name="meaning_start">Start</string>
+    <string name="meaning_trust_line">Cancel anytime · No ads · We never sell your data</string>
+    <string name="meaning_page0_title">Your everyday life shapes your future.</string>
+    <string name="meaning_page0_subtitle">Small choices around sleep, food, movement and stress quietly add up. We help you see that pattern, without pressure.</string>
+    <string name="meaning_page1_title">See direction, not just data.</string>
+    <string name="meaning_page1_subtitle">Instead of endless metrics, you get one main signal: how your biological age is moving over time.</string>
+    <string name="meaning_page2_title">Reflection instead of pressure.</string>
+    <string name="meaning_page2_subtitle">No streaks, no guilt. Just a short daily check-in that helps you notice patterns before they become problems.</string>
+
+    <!-- Forgot Password flow -->
+    <string name="forgot_reset_password">Reset password</string>
+    <string name="forgot_send_code_subtitle">We\'ll send a verification code to your email.</string>
+    <string name="forgot_email_address">Email address</string>
+    <string name="forgot_send_code">Send code</string>
+    <string name="forgot_toast_sent">If an account exists for this email, we\'ve sent a code.</string>
+    <string name="forgot_cancel">Cancel</string>
+    <string name="forgot_enter_code">Enter verification code</string>
+    <string name="forgot_sent_to">We sent a 6-digit code to %s</string>
+    <string name="forgot_verification_code">Verification code</string>
+    <string name="forgot_resend_in">Resend code in %ds</string>
+    <string name="forgot_resend_code">Resend code</string>
+    <string name="forgot_verify">Verify</string>
+    <string name="forgot_new_password_title">Create a new password</string>
+    <string name="forgot_new_password">New password</string>
+    <string name="forgot_confirm_password">Confirm password</string>
+    <string name="forgot_password_helper">A strong password helps protect your longevity data.</string>
+    <string name="forgot_passwords_dont_match">Passwords don\'t match yet.</string>
+    <string name="forgot_update_password">Update password</string>
+    <string name="forgot_success_message">Your password has been updated.</string>
+    <string name="forgot_back_to_sign_in">Back to sign in</string>
+
+    <!-- Onboarding questions (chat flow) -->
+    <string name="onboarding_intro">Welcome! I\'ll ask you 10 questions to understand your current health baseline. This takes about 2 minutes.</string>
+    <string name="onboarding_calculating">Calculating your baseline…</string>
+    <string name="onboarding_welcome_title">Welcome! 🎉</string>
+    <string name="onboarding_welcome_body">This app tracks your biological age and how daily habits affect it.\n\nYour baseline: biological age %.1f years, chronological age %.1f years (%.1f years %s).\n\nComplete your daily check-in to see how your choices move your age over time.\n\nHow can I help you today?</string>
+    <string name="onboarding_welcome_older">older</string>
+    <string name="onboarding_welcome_younger">younger</string>
+    <string name="onboarding_retry">Retry</string>
+    <string name="onboarding_error_generic">Something went wrong. Please try again.</string>
+
+    <!-- Initial Age Insight screen -->
+    <string name="initial_age_top_context">Your biological age today</string>
+    <string name="initial_age_loading">Loading…</string>
+    <string name="initial_age_biological_label">BIOLOGICAL</string>
+    <string name="initial_age_biological_age">Biological age</string>
+    <string name="initial_age_chronological_age">Chronological age</string>
+    <string name="initial_age_delta_close">Very close to your chronological age.</string>
+    <string name="initial_age_delta_above">Currently about %.1f years above your chronological age.</string>
+    <string name="initial_age_delta_younger">Currently about %.1f years younger than your chronological age.</string>
+    <string name="initial_age_no_data">Your biological age appears different from your chronological age.</string>
+    <string name="initial_age_verdict">This is a starting point — not a verdict.</string>
+    <string name="initial_age_dynamic">Your biological age is dynamic. With small daily choices, this number can move in a better direction over time.</string>
+    <string name="initial_age_disclaimer">Based on your onboarding answers. This is not medical advice.</string>
+    <string name="initial_age_cta">See how to improve this</string>
+    <string name="not_you_log_out">Not you? Log out</string>
+
+    <!-- Error messages -->
+    <string name="forgot_error_invalid_code">Invalid or expired code. Please request a new one.</string>
+    <string name="forgot_error_too_many_attempts">Too many attempts. Please wait a moment and try again.</string>
+    <string name="forgot_error_password_short">Try a slightly stronger password — at least 8 characters.</string>
+    <string name="forgot_error_password_weak">This password is easy to guess. Try adding more characters.</string>
+    <string name="forgot_error_update_failed">Failed to update password. Please try again.</string>
+    <string name="forgot_error_something_wrong">Something went wrong. Please try again.</string>
+    <string name="forgot_error_connection">Connection Issue</string>
 </resources>
