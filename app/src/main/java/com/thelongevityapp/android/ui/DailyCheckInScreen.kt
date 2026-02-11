@@ -27,8 +27,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.thelongevityapp.android.R
 import com.thelongevityapp.android.api.DailyMetricsPayload
 import com.thelongevityapp.android.data.ApiRepository
 import com.thelongevityapp.android.data.OptionItem
@@ -44,18 +46,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-private val dailyPrompts = listOf(
-    "How was your sleep last night?",
-    "How much movement did you get today?",
-    "How would you rate today's food quality?",
-    "How much added sugar did you consume today?",
-    "How stressed did you feel today?",
-    "How would you rate your mental workload today?",
-    "How was your mood and social connection today?",
-    "How would you rate your physical wellbeing today?",
-    "How would you rate your recovery status?",
-    "How was your self-care today?"
-)
+private val dailyQuestionIds = QuestionBanks.dailyQuestionIds
 
 @Composable
 fun DailyCheckInScreen(
@@ -77,16 +68,17 @@ fun DailyCheckInScreen(
             .padding(horizontal = 32.dp)
             .padding(top = 40.dp, bottom = 24.dp)
     ) {
-        Text("Daily Check-In", color = Color.White, fontSize = 28.sp)
+        Text(stringResource(R.string.daily_checkin_title), color = Color.White, fontSize = 28.sp)
         LinearProgressIndicator(
-            progress = (step + 1).toFloat() / dailyPrompts.size.coerceAtLeast(1),
+            progress = (step + 1).toFloat() / dailyQuestionIds.size.coerceAtLeast(1),
             modifier = Modifier.fillMaxWidth().height(6.dp),
             color = PrimaryGreen
         )
         Spacer(modifier = Modifier.height(24.dp))
-        if (step < dailyPrompts.size) {
+        if (step < dailyQuestionIds.size) {
+            val currentPromptResId = DailyCheckInStrings.promptResId(dailyQuestionIds[step])
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(dailyPrompts[step], color = TextSecondary, fontSize = 18.sp)
+                Text(stringResource(currentPromptResId), color = TextSecondary, fontSize = 18.sp)
                 Spacer(modifier = Modifier.height(16.dp))
                 options.forEach { opt ->
                     Card(
@@ -101,13 +93,13 @@ fun DailyCheckInScreen(
                         colors = CardDefaults.cardColors(containerColor = GlassFill),
                         border = BorderStroke(1.dp, CardStroke)
                     ) {
-                        Text(opt.title, modifier = Modifier.padding(16.dp), color = TextSecondary, fontSize = 16.sp)
+                        Text(stringResource(DailyCheckInStrings.optionResId(opt.value)), modifier = Modifier.padding(16.dp), color = TextSecondary, fontSize = 16.sp)
                     }
                 }
             }
         } else {
             var submitted by remember { mutableStateOf(false) }
-            if (answers.size == dailyPrompts.size && !submitted) {
+            if (answers.size == dailyQuestionIds.size && !submitted) {
                 androidx.compose.runtime.LaunchedEffect(answers.size) {
                     submitted = true
                     loading = true

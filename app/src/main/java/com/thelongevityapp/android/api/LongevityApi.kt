@@ -30,6 +30,12 @@ interface LongevityApi {
         @Header("X-Language") language: String?
     ): Response<Unit>
 
+    @POST("api/auth/bypassverify")
+    suspend fun postBypassVerify(
+        @Header("Authorization") authorization: String,
+        @Header("X-Language") language: String?
+    ): Response<Unit>
+
     @PATCH("api/auth/profile")
     suspend fun patchProfile(
         @Header("Authorization") authorization: String,
@@ -116,4 +122,11 @@ interface LongevityApi {
         @Header("Authorization") authorization: String,
         @Header("X-Language") language: String?
     ): SubscriptionStatusResponse
+
+    @POST("api/subscription/verify")
+    suspend fun postSubscriptionVerify(
+        @Header("Authorization") authorization: String,
+        @Header("X-Language") language: String?,
+        @Body body: SubscriptionVerifyRequest
+    ): Response<Unit>
 }

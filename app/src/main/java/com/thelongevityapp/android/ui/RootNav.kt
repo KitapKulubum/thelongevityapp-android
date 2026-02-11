@@ -15,9 +15,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import com.thelongevityapp.android.auth.ApiException
 import com.thelongevityapp.android.auth.AuthEvents
 import com.thelongevityapp.android.auth.AuthManager
-import com.thelongevityapp.android.auth.ApiException
+import com.thelongevityapp.android.auth.ErrorMessageHelper
 import com.thelongevityapp.android.data.ApiRepository
 import com.thelongevityapp.android.data.SessionRepository
 import androidx.compose.ui.graphics.Color
@@ -64,12 +65,7 @@ fun RootNav() {
                     onSuccess = { bootstrapDone = true },
                     onFailure = { e ->
                         AuthManager.signOut()
-                        authScreenError = when (e) {
-                            is ApiException.NetworkError -> "Connection Issue"
-                            is ApiException.HttpError -> if (e.statusCode >= 500) "Connection Issue" else (e.body.ifBlank { null } ?: e.message ?: "Something went wrong")
-                            is java.io.IOException -> "Connection Issue"
-                            else -> e.message ?: "Something went wrong"
-                        }
+                        authScreenError = ErrorMessageHelper.getMessage(e, ErrorMessageHelper.Context.Bootstrap)
                         bootstrapDone = true
                         authTrigger++
                     }
@@ -93,7 +89,7 @@ fun RootNav() {
             },
             onSignOut = { AuthManager.signOut(); authTrigger++ }
         )
-        session.appState.isSubscriptionActive -> MainTabScreen(session = session, apiRepo = apiRepo, onSignOut = { AuthManager.signOut(); authTrigger++ })
+        session.appState.isSubscriptionActive -> MainTabScreen(session = session, apiRepo = apiRepo, onSignOut = { AuthManager.signOut(); authTrigger++ }, onSubscriptionRequired = { navTrigger++ })
         !session.appState.hasSeenInitialAgeInsightScreen -> InitialAgeInsightScreen(
             session = session,
             apiRepo = apiRepo,
@@ -108,7 +104,7 @@ fun RootNav() {
             onContinue = { navTrigger++ },
             onSignOut = { AuthManager.signOut(); authTrigger++ }
         )
-        else -> MainTabScreen(session = session, apiRepo = apiRepo, onSignOut = { AuthManager.signOut(); authTrigger++ })
+        else -> MainTabScreen(session = session, apiRepo = apiRepo, onSignOut = { AuthManager.signOut(); authTrigger++ }, onSubscriptionRequired = { navTrigger++ })
     }
     }
 }

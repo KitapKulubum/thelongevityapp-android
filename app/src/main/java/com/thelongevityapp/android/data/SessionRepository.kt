@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import retrofit2.HttpException
 import java.util.Locale
 
@@ -134,15 +135,26 @@ class SessionRepository(private val context: Context) {
             onFailure = { e ->
                 when (e) {
                     is ApiException.HttpError -> {
-                        if (e.statusCode == 404 && (e.body.contains("onboarding", ignoreCase = true) || e.body.contains("user not found", ignoreCase = true))) {
+                        if (e.statusCode == 404 && (e.body.contains("onboarding", ignoreCase = true) || e.body.contains("user not found", ignoreCase = true) || e.body.contains("complete onboarding", ignoreCase = true))) {
                             appState.hasCompletedOnboarding = false
                             persistOnboarding(false)
                             Result.success(Unit)
-                        } else if (e.statusCode == 403 && e.body.contains("subscription", ignoreCase = true)) {
+                        } else if (e.statusCode == 403 && (e.body.contains("subscription_required", ignoreCase = true) || e.body.contains("subscription required", ignoreCase = true))) {
+                            if (appState.hasCompletedOnboarding) {
+                                appState.hasSeenChoosePlanScreen = false
+                                persistSeenChoosePlan(false)
+                            }
+                            appState.isSubscriptionActive = false
                             Result.success(Unit)
                         } else Result.failure(e)
                     }
-                    else -> if (requireBackend) Result.failure(e) else Result.success(Unit)
+                    is ApiException.MissingAuthToken -> Result.success(Unit)
+                    is JsonSyntaxException -> Result.success(Unit)
+                    is ApiException.NetworkError -> if (requireBackend) Result.failure(e) else Result.success(Unit)
+                    else -> {
+                        if (e.cause is JsonSyntaxException) Result.success(Unit)
+                        else if (requireBackend) Result.failure(e) else Result.success(Unit)
+                    }
                 }
             }
         )

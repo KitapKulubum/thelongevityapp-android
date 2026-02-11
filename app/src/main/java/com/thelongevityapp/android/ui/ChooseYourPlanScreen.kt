@@ -58,56 +58,56 @@ fun ChooseYourPlanScreen(
             .padding(top = 48.dp, bottom = 32.dp)
     ) {
         Text(
-            "Choose how you'd like to continue",
+            stringResource(R.string.plan_title),
             color = Color.White,
             fontSize = 28.sp
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            "Both plans include full access to biological age tracking and AI insights.",
+            stringResource(R.string.plan_subtitle),
             color = TextSecondary,
             fontSize = 14.sp
         )
         Spacer(modifier = Modifier.height(24.dp))
         PlanCard(
-            title = "Monthly",
-            price = "Monthly price",
-            description = "Cancel anytime",
+            title = stringResource(R.string.plan_monthly),
+            price = stringResource(R.string.plan_monthly_price),
+            description = stringResource(R.string.plan_cancel_anytime),
             selected = selectedPlan == "monthly",
             onClick = { selectedPlan = "monthly" }
         )
         Spacer(modifier = Modifier.height(12.dp))
         PlanCard(
-            title = "Yearly",
-            price = "Best value — billed yearly",
-            description = "Save compared to monthly",
-            badge = "Best value",
+            title = stringResource(R.string.plan_yearly),
+            price = stringResource(R.string.plan_yearly_price),
+            description = stringResource(R.string.plan_save_yearly),
+            badge = stringResource(R.string.plan_badge_best_value),
             selected = selectedPlan == "yearly",
             onClick = { selectedPlan = "yearly" }
         )
         Spacer(modifier = Modifier.height(20.dp))
         Text(
-            "Included in both plans",
+            stringResource(R.string.plan_included),
             color = Color.White.copy(alpha = 0.7f),
             fontSize = 13.sp
         )
         listOf(
-            "Biological age tracking",
-            "Daily check-in insights",
-            "AI coach and recommendations",
-            "Trend charts and impact factors"
-        ).forEach { item ->
+            R.string.plan_feature_age,
+            R.string.plan_feature_daily,
+            R.string.plan_feature_ai,
+            R.string.plan_feature_trends
+        ).forEach { resId ->
             Row(
                 modifier = Modifier.padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("✓", color = PrimaryGreen, fontSize = 14.sp, modifier = Modifier.padding(end = 8.dp))
-                Text(item, color = TextSecondary, fontSize = 14.sp)
+                Text(stringResource(resId), color = TextSecondary, fontSize = 14.sp)
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
         PrimaryPillButton(
-            text = if (selectedPlan == "yearly") "Continue with Yearly" else "Continue with Monthly",
+            text = if (selectedPlan == "yearly") stringResource(R.string.plan_continue_yearly) else stringResource(R.string.plan_continue_monthly),
             onClick = {
                 session.persistSeenChoosePlan(true)
                 onContinue()
@@ -116,7 +116,7 @@ fun ChooseYourPlanScreen(
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            "Restore purchases",
+            stringResource(R.string.plan_restore),
             color = Color.White.copy(alpha = 0.6f),
             fontSize = 14.sp,
             modifier = Modifier

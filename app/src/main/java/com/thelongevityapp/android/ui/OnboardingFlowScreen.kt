@@ -141,7 +141,7 @@ fun OnboardingFlowScreen(
             }
         } else {
             val q = questions[currentOnboardingQuestionIndex]
-            messages = messages + (false to q.prompt)
+            messages = messages + (false to context.getString(OnboardingStrings.promptResId(q.id)))
         }
     }
 
@@ -237,12 +237,12 @@ fun OnboardingFlowScreen(
                     val currentQuestion = questions.getOrNull(currentOnboardingQuestionIndex)
                     if (currentQuestion != null && !isSubmitting) {
                         Spacer(modifier = Modifier.height(12.dp))
-                        currentQuestion.options.forEach { opt ->
+                        currentQuestion.options.forEachIndexed { index, opt ->
                             OptionButton(
-                                text = opt.title,
+                                text = stringResource(OnboardingStrings.optionResId(currentQuestion.id, index)),
                                 onClick = {
                                     onboardingAnswers = onboardingAnswers + (currentQuestion.id to opt.value.value)
-                                    messages = messages + (true to opt.title)
+                                    messages = messages + (true to context.getString(OnboardingStrings.optionResId(currentQuestion.id, index)))
                                     currentOnboardingQuestionIndex++
                                     nextStepTrigger++
                                 },

@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.thelongevityapp.android.R
 import com.thelongevityapp.android.auth.ApiException
+import com.thelongevityapp.android.auth.ErrorMessageHelper
 import com.thelongevityapp.android.auth.AuthManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -154,7 +155,7 @@ fun AuthScreen(
             }
             Spacer(modifier = Modifier.height(18.dp))
             Text(
-                "The Longevity App",
+                stringResource(R.string.auth_app_title),
                 color = Color.White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -162,7 +163,7 @@ fun AuthScreen(
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                if (isSignUp) "Create your longevity profile" else "Continue your longevity journey.",
+                if (isSignUp) stringResource(R.string.auth_subtitle_signup) else stringResource(R.string.auth_subtitle_signin),
                 color = Color.White.copy(alpha = 0.6f),
                 fontSize = 13.sp
             )
@@ -173,16 +174,16 @@ fun AuthScreen(
             GlassTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = "First name",
-                placeholder = "Your Name",
+                label = stringResource(R.string.auth_first_name_label),
+                placeholder = stringResource(R.string.auth_first_name_placeholder),
                 helper = context.getString(R.string.auth_first_name_helper)
             )
             Spacer(modifier = Modifier.height(24.dp))
             GlassDatePicker(
                 value = dateOfBirthStr,
                 onValueChange = { dateOfBirthStr = it },
-                label = "Date of birth",
-                placeholder = "YYYY-MM-DD",
+                label = stringResource(R.string.auth_dob_label),
+                placeholder = stringResource(R.string.auth_dob_placeholder),
                 helper = context.getString(R.string.auth_dob_helper)
             )
             Spacer(modifier = Modifier.height(24.dp))
@@ -194,23 +195,23 @@ fun AuthScreen(
                 email = it
                 if (emailHasBlurred && isValidEmail(it.trim())) emailValidationMessage = null
             },
-            label = "Email address",
-            placeholder = "user@example.com",
+            label = stringResource(R.string.auth_email_label),
+            placeholder = stringResource(R.string.auth_email_placeholder),
             supportingText = emailValidationMessage
         )
         Spacer(modifier = Modifier.height(24.dp))
         GlassTextField(
             value = password,
             onValueChange = { password = it },
-            label = if (isSignUp) "Create password" else "Password",
-            placeholder = "••••••••",
+            label = if (isSignUp) stringResource(R.string.auth_create_password_label) else stringResource(R.string.auth_password_label),
+            placeholder = stringResource(R.string.auth_password_placeholder),
             isPassword = true,
             helper = if (isSignUp) context.getString(R.string.auth_password_helper) else null
         )
         if (!isSignUp) {
             Spacer(modifier = Modifier.height(8.dp))
             TextButton(onClick = { error = null; showForgotPasswordFlow = true }) {
-                Text("Forgot password?", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+                Text(stringResource(R.string.auth_forgot_password), color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
             }
         }
 
@@ -268,7 +269,7 @@ fun AuthScreen(
         val signupEnabled = name.trim().isNotBlank() && email.trim().isNotBlank() && password.isNotBlank() && agreeTerms && !loading
         val loginEnabled = email.trim().isNotBlank() && password.isNotBlank() && !loading
         PrimaryPillButton(
-            text = if (loading) "…" else if (isSignUp) "Create account" else "Continue",
+            text = if (loading) "…" else if (isSignUp) stringResource(R.string.auth_create_account) else stringResource(R.string.auth_continue),
             onClick = {
                 if (isSignUp && !agreeTerms) return@PrimaryPillButton
                 emailHasBlurred = true
@@ -306,6 +307,24 @@ fun AuthScreen(
                     } catch (e: Exception) {
                         withContext(Dispatchers.Main) {
                             loading = false
+                            val httpBody = when (e) {
+                                is ApiException.HttpError -> e.body
+                                is HttpException -> e.response()?.errorBody()?.string() ?: ""
+                                else -> ""
+                            }
+                            val statusCode = when (e) {
+                                is ApiException.HttpError -> e.statusCode
+                                is HttpException -> e.response()?.code() ?: -1
+                                else -> -1
+                            }
+                            val noLogout = (e is ApiException.HttpError || e is HttpException) && (
+                                (statusCode == 404 && (httpBody.contains("onboarding", ignoreCase = true) || httpBody.contains("user not found", ignoreCase = true))) ||
+                                (statusCode == 403 && ErrorMessageHelper.isSubscriptionRequired(statusCode, httpBody))
+                            )
+                            if (noLogout) {
+                                onAuthSuccess()
+                                return@withContext
+                            }
                             fun isBackendOrNetworkError(): Boolean = when (e) {
                                 is ApiException.HttpError -> true
                                 is HttpException -> true
@@ -315,21 +334,12 @@ fun AuthScreen(
                             }
                             if (isBackendOrNetworkError()) {
                                 AuthManager.signOut()
-                                error = when (e) {
-                                    is ApiException.NetworkError -> "Connection Issue"
-                                    is ApiException.HttpError -> if (e.statusCode >= 500 || e.statusCode == 401) "Connection Issue" else (e.body.ifBlank { null } ?: e.message ?: "Sign in failed")
-                                    is HttpException -> {
-                                        val code = e.response()?.code() ?: -1
-                                        if (code >= 500 || code == 401) "Connection Issue" else (e.response()?.errorBody()?.string()?.takeIf { it.isNotBlank() } ?: e.message ?: "Sign in failed")
-                                    }
-                                    is java.io.IOException -> "Connection Issue"
-                                    else -> e.message ?: "Sign in failed"
-                                }
+                                error = ErrorMessageHelper.getMessage(e, if (isSignUp) ErrorMessageHelper.Context.Signup else ErrorMessageHelper.Context.Login)
                             } else {
                                 error = when {
-                                    e.message?.contains("already in use", ignoreCase = true) == true -> "This email is already registered. Try signing in."
-                                    e.message?.contains("invalid", ignoreCase = true) == true -> "Invalid email or password."
-                                    else -> e.message ?: "Sign in failed"
+                                    e.message?.contains("already in use", ignoreCase = true) == true -> context.getString(R.string.auth_email_already_registered)
+                                    e.message?.contains("invalid", ignoreCase = true) == true -> context.getString(R.string.auth_invalid_email_password)
+                                    else -> e.message ?: context.getString(R.string.auth_sign_in_failed)
                                 }
                                 if (e.message?.contains("already in use", ignoreCase = true) == true) isSignUp = false
                             }

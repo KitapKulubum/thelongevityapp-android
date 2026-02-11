@@ -25,8 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.thelongevityapp.android.R
 import com.thelongevityapp.android.data.ApiRepository
 import com.thelongevityapp.android.data.SessionRepository
 import com.thelongevityapp.android.ui.theme.ContentGradientBottom
@@ -61,7 +63,8 @@ private fun RowScope.TabItem(
 fun MainTabScreen(
     session: SessionRepository,
     apiRepo: ApiRepository,
-    onSignOut: () -> Unit
+    onSignOut: () -> Unit,
+    onSubscriptionRequired: () -> Unit = {}
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(0) }
     Scaffold(
@@ -74,14 +77,14 @@ fun MainTabScreen(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                TabItem(0, "AI", Icons.Default.AutoAwesome, selectedTab) { selectedTab = it }
-                TabItem(1, "Age", Icons.Default.ShowChart, selectedTab) { selectedTab = it }
-                TabItem(2, "Profile", Icons.Default.Person, selectedTab) { selectedTab = it }
+                TabItem(0, stringResource(R.string.tab_ai), Icons.Default.AutoAwesome, selectedTab) { selectedTab = it }
+                TabItem(1, stringResource(R.string.tab_age), Icons.Default.ShowChart, selectedTab) { selectedTab = it }
+                TabItem(2, stringResource(R.string.tab_profile), Icons.Default.Person, selectedTab) { selectedTab = it }
             }
         }
     ) { padding ->
         when (selectedTab) {
-            0 -> ChatScreen(apiRepo = apiRepo, session = session, modifier = Modifier.padding(padding))
+            0 -> ChatScreen(apiRepo = apiRepo, session = session, onSubscriptionRequired = onSubscriptionRequired, modifier = Modifier.padding(padding))
             1 -> ScoreScreen(session = session, apiRepo = apiRepo, modifier = Modifier.padding(padding))
             2 -> ProfileScreen(session = session, apiRepo = apiRepo, onSignOut = onSignOut, modifier = Modifier.padding(padding))
         }

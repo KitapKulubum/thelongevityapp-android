@@ -4,10 +4,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,8 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,201 +25,307 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.thelongevityapp.android.api.HistoryPoint
+import com.thelongevityapp.android.R
+import com.thelongevityapp.android.api.BiologicalAgeChartPoint
 import com.thelongevityapp.android.api.ImpactFactor
 import com.thelongevityapp.android.api.RecentImpactFactorsResponse
 import com.thelongevityapp.android.data.ApiRepository
 import com.thelongevityapp.android.data.SessionRepository
-import com.thelongevityapp.android.ui.components.PrimaryPillButton
-import com.thelongevityapp.android.ui.theme.CardStroke
 import com.thelongevityapp.android.ui.theme.ContentGradientBottom
 import com.thelongevityapp.android.ui.theme.DarkBgTop
-import com.thelongevityapp.android.ui.theme.GlassFill
 import com.thelongevityapp.android.ui.theme.PrimaryGreen
 import com.thelongevityapp.android.ui.theme.PrimaryGreenBiologicalAge
-import com.thelongevityapp.android.ui.theme.TextSecondary
 import com.thelongevityapp.android.ui.theme.WarningOrange
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-@OptIn(ExperimentalMaterial3Api::class)
+private fun colorForBiologicalAge(biological: Double, chronological: Double): Color = when {
+    biological - chronological < -0.5 -> PrimaryGreenBiologicalAge
+    kotlin.math.abs(biological - chronological) <= 0.5 -> Color.White.copy(alpha = 0.6f)
+    else -> WarningOrange
+}
+
 @Composable
 fun ScoreScreen(
     session: SessionRepository,
     apiRepo: ApiRepository,
     modifier: Modifier = Modifier
 ) {
-    var showDailyCheckIn by remember { mutableStateOf(false) }
     var selectedRange by remember { mutableStateOf("weekly") }
+    var chartData by remember { mutableStateOf<List<BiologicalAgeChartPoint>>(emptyList()) }
+    var chartDelta by remember { mutableStateOf<Double?>(null) }
+    var chartLoading by remember { mutableStateOf(false) }
+    var chartError by remember { mutableStateOf<String?>(null) }
     var impactData by remember { mutableStateOf<RecentImpactFactorsResponse?>(null) }
+
     val summary = session.appState.summary
     val state = summary?.state
-    val todayDelta = summary?.today?.deltaYears ?: 0.0
-    val history: List<HistoryPoint> = when (selectedRange) {
-        "monthly" -> summary?.monthlyHistory.orEmpty()
-        "yearly" -> summary?.yearlyHistory.orEmpty()
-        else -> summary?.weeklyHistory.orEmpty()
+    val bioAge = state?.currentBiologicalAgeYears ?: state?.baselineBiologicalAgeYears ?: state?.chronologicalAgeYears ?: 0.0
+    val chronoAge = state?.chronologicalAgeYears ?: 0.0
+    val diff = bioAge - chronoAge
+    val ageColor = colorForBiologicalAge(bioAge, chronoAge)
+
+    fun loadChart(range: String) {
+        chartLoading = true
+        chartError = null
+        kotlinx.coroutines.CoroutineScope(Dispatchers.Main).launch {
+            val result = withContext(Dispatchers.IO) {
+                kotlin.runCatching {
+                    apiRepo.getBiologicalAgeChart(range)
+                }
+            }
+            chartLoading = false
+            result.fold(
+                onSuccess = { resp ->
+                    val list = resp.series?.sortedBy { it.date }.orEmpty()
+                    chartData = if (range == "yearly") aggregateYearlyToMonthly(list) else list
+                    chartDelta = resp.rangeDeltaYears
+                    chartError = null
+                },
+                onFailure = { e ->
+                    chartData = emptyList()
+                    chartDelta = null
+                    chartError = e.message ?: "Something went wrong"
+                }
+            )
+        }
     }
 
     LaunchedEffect(Unit) {
-        impactData = withContext(Dispatchers.IO) {
-            kotlin.runCatching { apiRepo.getRecentImpactFactors() }.getOrNull()
+        withContext(Dispatchers.IO) {
+            kotlin.runCatching { apiRepo.getSummary() }.onSuccess { session.persistSummary(it) }
+            kotlin.runCatching { apiRepo.getRecentImpactFactors() }.onSuccess { impactData = it }
         }
+    }
+    LaunchedEffect(selectedRange) {
+        loadChart(selectedRange)
     }
 
     Column(
         modifier = modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .background(Brush.verticalGradient(listOf(DarkBgTop, ContentGradientBottom)))
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
-            .padding(top = 40.dp, bottom = 24.dp)
+            .padding(top = 48.dp, bottom = 100.dp)
     ) {
-        Text("Age", color = Color.White, fontSize = 28.sp)
-        Spacer(modifier = Modifier.height(8.dp))
+        // Header
         Text(
-            "Biological Age Change",
-            color = TextSecondary,
-            fontSize = 14.sp
+            stringResource(R.string.age_header),
+            color = Color.White.copy(alpha = 0.6f),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.5.sp,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
         )
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Hero – biological age
+        Text(
+            "%.1f".format(bioAge),
+            color = ageColor,
+            fontSize = 72.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            stringResource(R.string.age_biological_label),
+            color = ageColor.copy(alpha = 0.65f),
+            fontSize = 9.sp,
+            letterSpacing = 1.2.sp,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+        val situationText = when {
+            diff < -0.5 -> stringResource(R.string.age_bio_below, -diff)
+            diff > 0.5 -> stringResource(R.string.age_bio_above, diff)
+            else -> stringResource(R.string.age_bio_aligned)
+        }
+        Text(
+            situationText,
+            color = Color.White.copy(alpha = if (diff > 0.5) 0.5f else 0.6f),
+            fontSize = 14.sp,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            "%.1f".format(chronoAge),
+            color = Color.White.copy(alpha = 0.25f),
+            fontSize = 24.sp
+        )
+        Text(
+            stringResource(R.string.age_chronological_label),
+            color = Color.White.copy(alpha = 0.25f),
+            fontSize = 8.sp,
+            modifier = Modifier.padding(top = 2.dp)
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Range selector – capsule: white 0.05 bg, white 0.1 stroke, 6 dp inner padding
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .clip(RoundedCornerShape(percent = 50))
+                .background(Color.White.copy(alpha = 0.05f))
+                .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(percent = 50))
+                .padding(6.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            listOf("Weekly" to "weekly", "Monthly" to "monthly", "Yearly" to "yearly").forEach { (label, value) ->
+            listOf(
+                stringResource(R.string.age_range_weekly) to "weekly",
+                stringResource(R.string.age_range_monthly) to "monthly",
+                stringResource(R.string.age_range_yearly) to "yearly"
+            ).forEach { (label, value) ->
                 val selected = selectedRange == value
-                Text(
-                    label,
-                    color = if (selected) PrimaryGreen else Color.White.copy(alpha = 0.6f),
-                    fontSize = 13.sp,
+                Box(
                     modifier = Modifier
-                        .clickable { selectedRange = value }
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                        .weight(1f)
+                        .clip(RoundedCornerShape(percent = 50))
                         .background(
-                            if (selected) PrimaryGreen.copy(alpha = 0.2f) else Color.Transparent,
-                            RoundedCornerShape(8.dp)
+                            if (selected) PrimaryGreen.copy(alpha = 0.9f) else Color.Transparent
                         )
-                )
-            }
-        }
-        Card(
-            modifier = Modifier.fillMaxWidth().height(160.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = GlassFill),
-            border = BorderStroke(1.dp, CardStroke)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                if (history.isEmpty()) {
-                    Text("Complete daily check-in to see trend.", color = TextSecondary, fontSize = 14.sp)
-                } else {
-                    history.takeLast(7).forEach { point ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(point.date, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
-                            Text(
-                                "%.1f yrs".format(point.biologicalAgeYears),
-                                color = PrimaryGreenBiologicalAge,
-                                fontSize = 12.sp
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
+                        .clickable { selectedRange = value }
+                        .padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        label,
+                        color = if (selected) Color.Black else Color.White.copy(alpha = 0.5f),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Today's Δ", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
-        Text(
-            "%.2f years".format(todayDelta),
-            color = when {
-                todayDelta < 0 -> PrimaryGreen
-                todayDelta > 0 -> WarningOrange
-                else -> Color.White.copy(alpha = 0.6f)
-            },
-            fontSize = 24.sp
-        )
         Spacer(modifier = Modifier.height(20.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = GlassFill),
-            border = BorderStroke(1.dp, CardStroke)
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                state?.let {
-                    Text("Chronological: %.1f years".format(it.chronologicalAgeYears), color = TextSecondary, fontSize = 16.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Biological: %.1f years".format(it.currentBiologicalAgeYears ?: it.chronologicalAgeYears), color = PrimaryGreen, fontSize = 18.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Aging debt: %.2f years".format(it.agingDebtYears), color = TextSecondary, fontSize = 16.sp)
-                    Text("%d day streak".format(it.rejuvenationStreakDays), color = TextSecondary, fontSize = 16.sp)
-                } ?: Text("Complete daily check-in to see your score.", color = TextSecondary, fontSize = 16.sp)
-            }
-        }
-        impactData?.message?.let { msg ->
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Recent impact", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
-            Text(msg, color = TextSecondary, fontSize = 14.sp)
-        }
-        impactData?.factors?.let { factors ->
-            Spacer(modifier = Modifier.height(8.dp))
-            factors.forEach { factor ->
-                ImpactFactorRow(factor = factor)
-            }
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-        PrimaryPillButton(
-            text = if (session.appState.isTodaySubmitted) "Today's check-in done" else "Start Daily Check-In",
-            onClick = { showDailyCheckIn = true },
-            modifier = Modifier.fillMaxWidth()
+
+        // Chart section
+        Text(
+            stringResource(R.string.age_chart_title),
+            color = Color.White.copy(alpha = 0.7f),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold
         )
-    }
-    if (showDailyCheckIn) {
-        ModalBottomSheet(
-            onDismissRequest = { showDailyCheckIn = false },
-            containerColor = ContentGradientBottom
-        ) {
-            DailyCheckInScreen(
-                session = session,
-                apiRepo = apiRepo,
-                onDone = { showDailyCheckIn = false }
+        val deltaText = when {
+            chartDelta == null -> null
+            chartDelta!! > 0 -> stringResource(R.string.age_chart_delta_up, chartDelta!!)
+            chartDelta!! < 0 -> stringResource(R.string.age_chart_delta_down, chartDelta!!)
+            else -> stringResource(R.string.age_chart_no_change)
+        }
+        if (deltaText != null) {
+            Text(
+                deltaText,
+                color = when {
+                    (chartDelta ?: 0.0) < 0 -> PrimaryGreen
+                    (chartDelta ?: 0.0) > 0 -> WarningOrange
+                    else -> Color.White.copy(alpha = 0.6f)
+                },
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        BiologicalAgeChart(
+            series = chartData,
+            rangeDeltaYears = chartDelta,
+            isLoading = chartLoading,
+            error = chartError,
+            modifier = Modifier.fillMaxWidth(),
+            range = selectedRange
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Recent Impact Factors
+        Text(
+            stringResource(R.string.age_impact_title),
+            color = Color.White.copy(alpha = 0.7f),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        impactData?.let { data ->
+            if (data.date != null || data.deltaYears != null) {
+                val deltaStr = data.deltaYears?.let { d -> " Δ${if (d >= 0) "+" else ""}%.2f".format(d) } ?: ""
+                Text(
+                    "• ${data.date ?: ""}$deltaStr",
+                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            Text(
+                stringResource(R.string.age_impact_subtitle),
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 11.sp,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+            data.message?.let { msg ->
+                Text(
+                    msg,
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+            val factors = data.factors?.take(4).orEmpty()
+            if (factors.isEmpty()) {
+                Text(
+                    stringResource(R.string.age_impact_no_checkin),
+                    color = Color.White.copy(alpha = 0.4f),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+            } else {
+                factors.forEach { factor ->
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ImpactFactorCardView(factor = factor)
+                }
+            }
+        } ?: run {
+            Text(
+                stringResource(R.string.age_impact_no_checkin),
+                color = Color.White.copy(alpha = 0.4f),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 8.dp)
             )
         }
     }
 }
 
 @Composable
-private fun ImpactFactorRow(factor: ImpactFactor) {
+private fun ImpactFactorCardView(factor: ImpactFactor) {
+    val isPositive = factor.sign == "positive"
+    val accentColor = if (isPositive) WarningOrange else PrimaryGreen
+    val signText = if (isPositive) stringResource(R.string.age_impact_ages_you) else stringResource(R.string.age_impact_helps_offset)
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = accentColor.copy(alpha = 0.1f)),
+        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Column(modifier = Modifier.padding(14.dp)) {
             Text(
                 factor.label ?: "",
-                color = Color.White,
-                fontSize = 14.sp,
-                modifier = Modifier.weight(1f)
+                color = Color.White.copy(alpha = 0.98f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
             )
-            factor.sign?.let { sign ->
-                Text(
-                    if (sign == "positive") "▲ Ages you" else "▼ Helps offset",
-                    color = if (sign == "positive") WarningOrange else PrimaryGreen,
-                    fontSize = 12.sp
-                )
+            Text(
+                signText,
+                color = accentColor,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            factor.score?.let { _ ->
+                // Optional: map score to option text from QuestionBanks if needed
             }
         }
     }

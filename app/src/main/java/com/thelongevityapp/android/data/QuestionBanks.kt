@@ -13,6 +13,9 @@ data class OptionItem(val title: String, val value: AnswerValue)
 
 data class OnboardingQuestion(val id: String, val prompt: String, val options: List<OptionItem>)
 
+/** Daily check-in: id (maps to backend snake_case metric key), prompt. */
+data class DailyQuestion(val id: String, val prompt: String)
+
 object QuestionBanks {
     @Suppress("UNUSED_PARAMETER")
     fun onboardingQuestions(lang: String): List<OnboardingQuestion> = listOf(
@@ -128,9 +131,25 @@ object QuestionBanks {
         )
     )
 
+    /** Daily check-in question ids; order matches backend metrics (sleep_quality, movement_level, ...). */
     val dailyQuestionIds = listOf(
         "sleep", "movement", "foodQuality", "sugar", "stress", "mentalLoad",
         "moodSocial", "physicalWellbeing", "recoveryStatus", "selfCare"
+    )
+
+    /** Daily check-in questions: id + prompt. First question is "How was your sleep last night?" (localize as needed). */
+    @Suppress("UNUSED_PARAMETER")
+    fun dailyQuestions(lang: String): List<DailyQuestion> = listOf(
+        DailyQuestion("sleep", "How was your sleep last night?"),
+        DailyQuestion("movement", "How much movement did you get today?"),
+        DailyQuestion("foodQuality", "How would you rate today's food quality?"),
+        DailyQuestion("sugar", "How much added sugar did you consume today?"),
+        DailyQuestion("stress", "How stressed did you feel today?"),
+        DailyQuestion("mentalLoad", "How would you rate your mental workload today?"),
+        DailyQuestion("moodSocial", "How was your mood and social connection today?"),
+        DailyQuestion("physicalWellbeing", "How would you rate your physical wellbeing today?"),
+        DailyQuestion("recoveryStatus", "How would you rate your recovery status?"),
+        DailyQuestion("selfCare", "How was your self-care today?")
     )
 
     fun dailyOptions(): List<OptionItem> = listOf(

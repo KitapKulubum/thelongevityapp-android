@@ -37,13 +37,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.thelongevityapp.android.ui.theme.InputSurfaceDark
@@ -352,7 +357,46 @@ fun CheckCircle(
     }
 }
 
-// §4.9 ChatBubbleView — kullanıcı sağa, AI sola; corner 18dp, padding 18/14
+// §4.9.1 Markdown: # ## ### #### → bold; - * (not **) → •; **text** → bold
+private fun boldSpansOnly(s: String): AnnotatedString = buildAnnotatedString {
+    var i = 0
+    while (i < s.length) {
+        val open = s.indexOf("**", i)
+        if (open == -1) {
+            append(s.substring(i))
+            return@buildAnnotatedString
+        }
+        append(s.substring(i, open))
+        val close = s.indexOf("**", open + 2)
+        if (close == -1) {
+            append(s.substring(open))
+            return@buildAnnotatedString
+        }
+        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+            append(s.substring(open + 2, close))
+        }
+        i = close + 2
+    }
+}
+
+private fun parseMarkdownToAnnotatedString(input: String): AnnotatedString = buildAnnotatedString {
+    val lines = input.split("\n")
+    lines.forEachIndexed { index, line ->
+        if (index > 0) append("\n")
+        val t = line.trim()
+        when {
+            t.startsWith("#### ") -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(t.removePrefix("#### ")) }
+            t.startsWith("### ") -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(t.removePrefix("### ")) }
+            t.startsWith("## ") -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(t.removePrefix("## ")) }
+            t.startsWith("# ") -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(t.removePrefix("# ")) }
+            t.startsWith("- ") -> { append("• "); append(boldSpansOnly(t.removePrefix("- "))) }
+            t.startsWith("* ") && !t.startsWith("**") -> { append("• "); append(boldSpansOnly(t.removePrefix("* "))) }
+            else -> append(boldSpansOnly(line))
+        }
+    }
+}
+
+// §4.9 ChatBubbleView — kullanıcı sağa, AI sola; corner 18dp, padding 18/14; AI mesajında markdown
 @Composable
 fun ChatBubbleView(
     text: String,
@@ -378,17 +422,26 @@ fun ChatBubbleView(
                 )
                 .padding(horizontal = 18.dp, vertical = 14.dp)
         ) {
-            Text(
-                text = text,
-                color = Color.White,
-                fontSize = 15.sp,
-                lineHeight = 20.sp
-            )
+            if (isUser) {
+                Text(
+                    text = text,
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    lineHeight = 20.sp
+                )
+            } else {
+                Text(
+                    text = parseMarkdownToAnnotatedString(text),
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    lineHeight = 20.sp
+                )
+            }
         }
     }
 }
 
-// §4.10 InputBarView — 54dp, capsule black 0.87, stroke primaryGreen 0.1/0.22, placeholder, send
+// §4.10 InputBarView — 54dp, capsule black 0.87, stroke primaryGreen 0.1/0.22, placeholder, send. Disabled when check-in open (opacity 0.4).
 @Composable
 fun InputBarView(
     value: String,
@@ -396,19 +449,23 @@ fun InputBarView(
     onSend: () -> Unit,
     modifier: Modifier = Modifier,
     loading: Boolean = false,
+    enabled: Boolean = true,
     placeholder: String = "How did today affect my biological age?"
 ) {
     val shape = RoundedCornerShape(percent = 50)
+    val rowAlpha = if (enabled) 1f else 0.4f
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(54.dp),
+            .height(54.dp)
+            .alpha(rowAlpha),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
+            readOnly = !enabled,
             placeholder = { Text(placeholder, color = Color.White.copy(alpha = 0.62f), fontSize = 16.sp) },
             modifier = Modifier
                 .weight(1f)
@@ -435,7 +492,7 @@ fun InputBarView(
                 disabledContainerColor = Color.White.copy(alpha = 0.15f),
                 disabledContentColor = Color.White.copy(alpha = 0.35f)
             ),
-            enabled = !loading && value.isNotBlank()
+            enabled = enabled && !loading && value.isNotBlank()
         ) {
             Icon(Icons.Default.Send, contentDescription = "Send")
         }

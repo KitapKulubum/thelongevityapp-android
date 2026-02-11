@@ -14,11 +14,13 @@ import com.thelongevityapp.android.api.OnboardingResultDTO
 import com.thelongevityapp.android.api.PasswordResetConfirmRequest
 import com.thelongevityapp.android.api.PasswordResetRequestRequest
 import com.thelongevityapp.android.api.PasswordResetVerifyRequest
+import com.thelongevityapp.android.api.ProfileUpdateRequest
 import com.thelongevityapp.android.api.RecentImpactFactorsResponse
 import com.thelongevityapp.android.api.BiologicalAgeChartResponse
 import com.thelongevityapp.android.api.SubscriptionStatusResponse
 import com.thelongevityapp.android.api.RetrofitModule
 import com.thelongevityapp.android.api.StatsSummaryResponse
+import com.thelongevityapp.android.api.SubscriptionVerifyRequest
 import com.thelongevityapp.android.auth.ApiException
 import com.thelongevityapp.android.auth.AuthManager
 import kotlinx.coroutines.Dispatchers
@@ -36,9 +38,28 @@ class ApiRepository(private val session: SessionRepository) {
         } catch (_: Exception) { }
     }
 
+    suspend fun patchProfile(preferredLanguage: String? = null): AuthProfileResponse = withContext(Dispatchers.IO) {
+        try {
+            RetrofitModule.api.patchProfile(
+                "Bearer ${AuthManager.getIdToken()}",
+                language(),
+                ProfileUpdateRequest(preferredLanguage = preferredLanguage)
+            )
+        } catch (e: HttpException) {
+            val resp = e.response()
+            throw ApiException.HttpError(resp?.code() ?: -1, resp?.errorBody()?.string() ?: "")
+        }
+    }
+
     suspend fun deleteAccount(): Unit = withContext(Dispatchers.IO) {
         val token = AuthManager.getIdToken()
         val r = RetrofitModule.api.deleteAccount("Bearer $token", language())
+        if (!r.isSuccessful) throw ApiException.HttpError(r.code(), r.errorBody()?.string() ?: "")
+    }
+
+    /** DEBUG only: bypass email verification for testing. */
+    suspend fun postBypassVerify(): Unit = withContext(Dispatchers.IO) {
+        val r = RetrofitModule.api.postBypassVerify("Bearer ${AuthManager.getIdToken()}", language())
         if (!r.isSuccessful) throw ApiException.HttpError(r.code(), r.errorBody()?.string() ?: "")
     }
 
@@ -100,7 +121,7 @@ class ApiRepository(private val session: SessionRepository) {
             )
         } catch (e: HttpException) {
             val resp = e.response()
-            throw ApiException.HttpError(resp?.code() ?: -1, "")
+            throw ApiException.HttpError(resp?.code() ?: -1, resp?.errorBody()?.string() ?: "")
         }
     }
 
@@ -166,5 +187,15 @@ class ApiRepository(private val session: SessionRepository) {
             val resp = e.response()
             throw ApiException.HttpError(resp?.code() ?: -1, "")
         }
+    }
+
+    /** Call after Google Play purchase; backend expects e.g. base64 purchase token. */
+    suspend fun postSubscriptionVerify(purchaseToken: String): Unit = withContext(Dispatchers.IO) {
+        val r = RetrofitModule.api.postSubscriptionVerify(
+            "Bearer ${AuthManager.getIdToken()}",
+            language(),
+            SubscriptionVerifyRequest(purchaseToken)
+        )
+        if (!r.isSuccessful) throw ApiException.HttpError(r.code(), r.errorBody()?.string() ?: "")
     }
 }

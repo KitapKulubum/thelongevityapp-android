@@ -190,3 +190,7 @@ data class SubscriptionInfo(
     val plan: String? = null,
     val renewalDate: String? = null
 )
+/** Body for POST /api/subscription/verify — e.g. base64 purchase token from Google Play. */
+data class SubscriptionVerifyRequest(
+    val purchaseToken: String
+)

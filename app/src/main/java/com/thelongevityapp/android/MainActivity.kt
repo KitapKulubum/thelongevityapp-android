@@ -1,5 +1,8 @@
 package com.thelongevityapp.android
 
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -14,8 +17,19 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowCompat
 import com.thelongevityapp.android.ui.RootNav
 import com.thelongevityapp.android.ui.theme.PrimaryGreen
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        val lang = newBase.getSharedPreferences("session", Context.MODE_PRIVATE)
+            .getString("language", null) ?: Locale.getDefault().language
+        val locale = Locale.forLanguageTag(if (lang.length >= 2) lang else "en")
+        val config = Configuration(newBase.resources.configuration)
+        config.setLocale(locale)
+        super.attachBaseContext(ContextWrapper(newBase.createConfigurationContext(config)))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
